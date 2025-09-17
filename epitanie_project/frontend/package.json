@@ -1,0 +1,15 @@
+{
+  "name": "epitanie-frontend",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "keycloak-js": "^21.1.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  }
+}
