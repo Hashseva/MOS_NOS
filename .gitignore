@@ -1,0 +1,12 @@
+# Node.js
+node_modules/
+
+# Logs
+logs/
+*.log
+
+# Vite cache
+.vite/
+
+# Environment files
+.env

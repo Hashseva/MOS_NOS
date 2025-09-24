@@ -40,6 +40,15 @@ CREATE TABLE document (
     date_creation TIMESTAMP DEFAULT now()
 );
 
+CREATE TABLE messages (
+  id SERIAL PRIMARY KEY,
+  createur_id INT NOT NULL,
+  destinataire_id INT NOT NULL,
+  contenu TEXT NOT NULL,
+  date_creation TIMESTAMP DEFAULT now()
+);
+
+
 CREATE TABLE rendezvous (
     id SERIAL PRIMARY KEY,
     patient_id INT REFERENCES patient(id) ON DELETE CASCADE,

@@ -1,50 +1,63 @@
-import React, { useEffect, useState } from 'react'
-import Keycloak from 'keycloak-js'
+import React, { useEffect, useState } from 'react';
+import Keycloak from 'keycloak-js';
+import Patients from './components/Patients';
+import Documents from './components/Documents';
+import Rendezvous from './components/Rendezvous';
+import Analyses from './components/Analyses';
+import Messages from './components/Messages';
 
 const keycloak = new Keycloak({
   url: 'http://localhost:8080',
   realm: 'epitanie',
-  clientId: 'epitanie-app'
+  clientId: 'epitanie-frontend'
 });
 
 export default function App() {
   const [kc, setKc] = useState(null);
   const [authenticated, setAuthenticated] = useState(false);
-  const [patients, setPatients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [section, setSection] = useState('patients');
 
   useEffect(() => {
-    keycloak.init({ onLoad: 'login-required' }).then(authenticated => {
-      setKc(keycloak);
-      setAuthenticated(authenticated);
-      if (authenticated) fetchPatients(keycloak.token);
-    });
+    keycloak.init({ onLoad: 'login-required', checkLoginIframe: false })
+      .then(auth => {
+        setKc(keycloak);
+        setAuthenticated(auth);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Erreur Keycloak init', err);
+        setLoading(false);
+      });
   }, []);
 
-  async function fetchPatients(token) {
-    const res = await fetch('http://localhost:4000/api/patients', {
-      headers: { Authorization: 'Bearer ' + token }
-    });
-    const data = await res.json();
-    setPatients(data);
-  }
-
-  if (!kc) return <div>Initialisation Keycloak...</div>;
+  if (loading) return <div>Initialisation Keycloak...</div>;
   if (!authenticated) return <div>Non authentifié</div>;
 
   return (
-    <div style={{ padding: 24 }}>
-      <h1>Plateforme Epitanie — Interface minimale</h1>
-      <p>Utilisateur: {kc.tokenParsed && kc.tokenParsed.preferred_username} — Rôles: {(kc.tokenParsed && kc.tokenParsed.realm_access && kc.tokenParsed.realm_access.roles) ? kc.tokenParsed.realm_access.roles.join(', ') : ''}</p>
-      <button onClick={() => { kc.logout(); }}>Logout</button>
-
-      <h2>Mes patients</h2>
-      {patients.length === 0 ? <p>Aucun patient accessible</p> : (
-        <ul>
-          {patients.map(p => (
-            <li key={p.id}>{p.prenom} {p.nom} — IPP: {p.ipp}</li>
-          ))}
+    <div style={{ display: 'flex', height: '100vh', fontFamily: 'sans-serif' }}>
+      <nav style={{ width: 220, background: '#f0f0f0', padding: 16 }}>
+        <h3>Epitanie Dashboard</h3>
+        <p>{kc.tokenParsed?.preferred_username}</p>
+        <p>Rôles: {kc.tokenParsed?.realm_access?.roles.join(', ')}</p>
+        <button onClick={() => kc.logout()}>Logout</button>
+        <hr />
+        <ul style={{ listStyle: 'none', padding: 0 }}>
+          <li><button onClick={() => setSection('patients')}>Patients</button></li>
+          <li><button onClick={() => setSection('documents')}>Documents</button></li>
+          <li><button onClick={() => setSection('rendezvous')}>Rendez-vous</button></li>
+          <li><button onClick={() => setSection('analyses')}>Résultats d’analyses</button></li>
+          <li><button onClick={() => setSection('messages')}>Messagerie</button></li>
         </ul>
-      )}
+      </nav>
+
+      <main style={{ flex: 1, padding: 24, overflowY: 'auto' }}>
+        {section === 'patients' && <Patients token={kc.token} roles={kc.tokenParsed?.realm_access?.roles} />}
+        {section === 'documents' && <Documents token={kc.token} roles={kc.tokenParsed?.realm_access?.roles} />}
+        {section === 'rendezvous' && <Rendezvous token={kc.token} roles={kc.tokenParsed?.realm_access?.roles} />}
+        {section === 'analyses' && <Analyses token={kc.token} roles={kc.tokenParsed?.realm_access?.roles} />}
+        {section === 'messages' && <Messages token={kc.token} roles={kc.tokenParsed?.realm_access?.roles} />}
+      </main>
     </div>
   );
 }
