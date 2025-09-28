@@ -19,20 +19,43 @@ export default function App() {
   const [section, setSection] = useState('patients');
 
   useEffect(() => {
-    keycloak.init({ onLoad: 'login-required', checkLoginIframe: false })
-      .then(auth => {
+    let refreshTimer;
+
+    keycloak
+      .init({
+        onLoad: 'login-required',
+        checkLoginIframe: false,
+        pkceMethod: 'S256',                 // ← ajout 1 : PKCE (recommandé)
+      })
+      .then((auth) => {
         setKc(keycloak);
         setAuthenticated(auth);
         setLoading(false);
+
+        if (!auth) {
+          keycloak.login({                   // ← ajout 2 : force la redirection
+            redirectUri: window.location.href,
+          });
+          return;
+        }
+
+        // (optionnel) refresh token pour rester connecté
+        refreshTimer = setInterval(() => {
+          keycloak.updateToken(60).catch(() => keycloak.login());
+        }, 30000);
       })
-      .catch(err => {
+      .catch((err) => {
         console.error('Erreur Keycloak init', err);
         setLoading(false);
       });
+
+    return () => {
+      if (refreshTimer) clearInterval(refreshTimer);
+    };
   }, []);
 
   if (loading) return <div>Initialisation Keycloak...</div>;
-  if (!authenticated) return <div>Non authentifié</div>;
+  if (!authenticated) return <div>Redirection vers la page de connexion…</div>;
 
   return (
     <div style={{ display: 'flex', height: '100vh', fontFamily: 'sans-serif' }}>
@@ -40,7 +63,7 @@ export default function App() {
         <h3>Epitanie Dashboard</h3>
         <p>{kc.tokenParsed?.preferred_username}</p>
         <p>Rôles: {kc.tokenParsed?.realm_access?.roles.join(', ')}</p>
-        <button onClick={() => kc.logout()}>Logout</button>
+        <button onClick={() => kc.logout({ redirectUri: window.location.origin })}>Logout</button>
         <hr />
         <ul style={{ listStyle: 'none', padding: 0 }}>
           <li><button onClick={() => setSection('patients')}>Patients</button></li>
