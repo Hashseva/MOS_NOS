@@ -60,14 +60,11 @@ async function getProByUsername(username) {
   return r.rows[0]; // undefined if not found
 }
 
-// helper: resolve patient by KC username (IPP)
-async function getPatientByUsername(username) {
-  const r = await pool.query('SELECT * FROM patient WHERE ipp = $1', [username]);
-  return r.rows[0];
-}
-
 async function getPatientByIPP(ipp) {
-  const r = await pool.query('SELECT id, structure_id FROM patient WHERE ipp = $1', [ipp]);
+  const r = await pool.query(
+    'SELECT * FROM patient WHERE UPPER(ipp) = UPPER($1)',
+    [String(ipp).trim()]
+  );
   return r.rows[0];
 }
 
@@ -102,7 +99,7 @@ app.get('/api/patients', keycloak.protect(), async (req, res) => {
       rows = (await pool.query(q, [pro.structure_id])).rows;
 
     } else if (roles.includes('patient')) {
-      const pat = await getPatientByUsername(username); // username = IPP-000x
+      const pat = await getPatientByIPP(username); // username = IPP-000x
       if (!pat) return res.status(403).json({ error: 'patient not found' });
       rows = [pat];
 
@@ -501,40 +498,87 @@ app.post('/api/resultats', keycloak.protect(), async (req, res) => {
 
 
 // =================== Messagerie interne ===================
-app.post('/api/messages', keycloak.protect(), async (req, res) => {
+app.get('/api/users', keycloak.protect(), async (req, res) => {
   try {
-    const user = extractUserInfo(req);
-    const { destinataire_id, contenu } = req.body;
-    const createur_id = user.roles.includes('patient') ? parseInt(user.id_patient, 10) : parseInt(user.id_professionnel, 10);
-    const insertQuery = 'INSERT INTO messages (createur_id, destinataire_id, contenu) VALUES ($1,$2,$3) RETURNING *';
-    const { rows } = await pool.query(insertQuery, [createur_id, destinataire_id, contenu]);
-    return res.status(201).json(rows[0]);
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: err.message });
+    // For demo, just list everyone from both tables
+    const pros = (await pool.query(
+      'SELECT id, nom, prenom FROM professionnel ORDER BY nom'
+    )).rows.map(p => ({ id: `pro-${p.id}`, nom: p.nom, prenom: p.prenom }));
+
+    const pats = (await pool.query(
+      'SELECT id, nom, prenom FROM patient ORDER BY nom'
+    )).rows.map(p => ({ id: `pat-${p.id}`, nom: p.nom, prenom: p.prenom }));
+
+    return res.json([...pros, ...pats]);
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: e.message });
   }
 });
 
-app.get('/api/messages/:userId', keycloak.protect(), async (req, res) => {
+app.post('/api/messages', keycloak.protect(), async (req, res) => {
   try {
-    const user = extractUserInfo(req);
-    const uid = parseInt(req.params.userId, 10);
-    let allowedIds = [];
-    if (user.roles.includes('medecin') || user.roles.includes('infirmier') || user.roles.includes('secretaire')) {
-      const profId = parseInt(user.id_professionnel, 10);
-      // autorisation : peut lire tous messages où il est créateur ou destinataire
-      const rows = (await pool.query('SELECT * FROM messages WHERE createur_id=$1 OR destinataire_id=$1', [profId])).rows;
-      return res.json(rows);
-    } else if (user.roles.includes('patient')) {
-      const pid = parseInt(user.id_patient, 10);
-      const rows = (await pool.query('SELECT * FROM messages WHERE createur_id=$1 OR destinataire_id=$1', [pid])).rows;
-      return res.json(rows);
-    } else {
-      return res.status(403).json({ error: 'Not allowed' });
-    }
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: err.message });
+    const { username, roles } = getKC(req);
+    const { destinataire_id, contenu } = req.body || {};
+    if (!destinataire_id || !contenu) return res.status(400).json({ error: 'missing fields' });
+
+    // me
+    let me;
+    if (roles.includes('patient')) me = await getPatientByIPP(username);
+    else me = await getProByUsername(username);
+    if (!me) return res.status(403).json({ error: 'user not found' });
+    const myType = roles.includes('patient') ? 'pat' : 'pro';
+
+    // target
+    const [targetType, targetIdStr] = destinataire_id.split('-');
+    const targetId = Number(targetIdStr);
+
+    await pool.query(
+      `INSERT INTO message (emetteur_type, emetteur_id, destinataire_type, destinataire_id, contenu, date_envoi)
+       VALUES ($1,$2,$3,$4,$5,NOW())`,
+      [myType, me.id, targetType, targetId, contenu]
+    );
+
+    return res.status(201).json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/messages/:userKey', keycloak.protect(), async (req, res) => {
+  try {
+    const { username, roles } = getKC(req);
+
+    // qui suis-je ?
+    let me;
+    if (roles.includes('patient')) me = await getPatientByIPP(username);
+    else me = await getProByUsername(username);
+    if (!me) return res.status(403).json({ error: 'user not found' });
+    const myType = roles.includes('patient') ? 'pat' : 'pro';
+
+    // cible
+    const [targetType, targetIdStr] = req.params.userKey.split('-');
+    const targetId = Number(targetIdStr);
+
+    const rows = (await pool.query(
+      `SELECT id, emetteur_type, emetteur_id, destinataire_type, destinataire_id, contenu, date_envoi
+       FROM message
+       WHERE (emetteur_type=$1 AND emetteur_id=$2 AND destinataire_type=$3 AND destinataire_id=$4)
+          OR (emetteur_type=$3 AND emetteur_id=$4 AND destinataire_type=$1 AND destinataire_id=$2)
+       ORDER BY date_envoi`,
+      [myType, me.id, targetType, targetId]
+    )).rows;
+
+    // ajoute un champ "fromMe"
+    rows.forEach(m => {
+      m.fromMe = (m.emetteur_type === myType && m.emetteur_id === me.id);
+    });
+
+    return res.json(rows);
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: e.message });
   }
 });
 

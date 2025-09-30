@@ -47,7 +47,11 @@ export default function Messages({ token, roles }) {
       </div>
 
       <ul>
-        {messages.map(m=><li key={m.id}>{m.contenu} — {new Date(m.date_envoi).toLocaleString()}</li>)}
+        {messages.map(m => (
+          <div key={m.id}>
+            <b>{m.fromMe ? "Moi" : "Lui"}:</b> {m.contenu}
+          </div>
+        ))}
       </ul>
 
       <form onSubmit={sendMessage}>

@@ -40,14 +40,15 @@ CREATE TABLE document (
     date_creation TIMESTAMP DEFAULT now()
 );
 
-CREATE TABLE messages (
+CREATE TABLE message (
   id SERIAL PRIMARY KEY,
-  createur_id INT NOT NULL,
-  destinataire_id INT NOT NULL,
+  emetteur_type TEXT NOT NULL,      -- 'pro' or 'pat'
+  emetteur_id   INT NOT NULL,
+  destinataire_type TEXT NOT NULL,  -- 'pro' or 'pat'
+  destinataire_id   INT NOT NULL,
   contenu TEXT NOT NULL,
-  date_creation TIMESTAMP DEFAULT now()
+  date_envoi TIMESTAMP DEFAULT now()
 );
-
 
 CREATE TABLE rendezvous (
     id SERIAL PRIMARY KEY,
