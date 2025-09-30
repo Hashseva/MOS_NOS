@@ -7,7 +7,11 @@ Prérequis :
 - Node.js (≥ v18) si vous souhaitez lancer le backend manuellement  
 
 ### Démarrage
+
+In the `epitanie_project` folder:
+
 ```bash
+npm run install-all
 ./start-dev.sh
 ````
 
