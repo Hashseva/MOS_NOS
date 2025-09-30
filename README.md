@@ -8,7 +8,7 @@ Prérequis :
 
 ### Démarrage
 
-In the `epitanie_project` folder:
+Dans le dossier `epitanie_project`:
 
 ```bash
 npm run install-all
