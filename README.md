@@ -1,13 +1,4 @@
-1. **Comment lancer le projet** (script `start-dev.sh` + dépendances Docker).
-2. **Comment se connecter à l’application** avec les différents utilisateurs (issus de ta capture Keycloak).
-3. **Comment se connecter à l’admin Keycloak** (admin / admin).
-4. **Organisation technique** (backend, frontend, postgres, keycloak).
-5. **Description rapide des classes MOS (médecin, infirmier, patient, secrétaire, etc.)** et de leurs rôles.
-
-Voici un exemple que tu pourras mettre directement dans ton repo sous `README.md` :
-
-````markdown
-# Épitanie Project
+# Épitanie Project MOS NOS
 
 ## 🚀 Lancement du projet
 
