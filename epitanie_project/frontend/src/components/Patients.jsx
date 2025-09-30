@@ -11,10 +11,12 @@ export default function Patients({ token, roles }) {
     nom: '',
     prenom: '',
     date_naissance: '',
+    pathologie:''
   });
 
   // Attach existing patient by IPP
   const [attachIPP, setAttachIPP] = useState('');
+  const [attachPatho, setAttachPatho] = useState('');
 
   useEffect(() => { fetchPatients(); }, []);
 
@@ -26,30 +28,20 @@ export default function Patients({ token, roles }) {
     finally { setLoading(false); }
   }
 
+  // create
   async function createPatient(e) {
     e.preventDefault();
-    try {
-      // POST /patients creates AND auto-links to the current professional (backend below)
-      await api(token).post('/patients', newPatient);
-      setNewPatient({ ipp: '', nom: '', prenom: '', date_naissance: '' });
-      await fetchPatients();
-    } catch (err) {
-      console.error(err);
-      alert("Échec de la création du patient.");
-    }
+    await api(token).post('/patients', newPatient);   // pathologie included
+    setNewPatient({ ipp:'', nom:'', prenom:'', date_naissance:'', pathologie:'' });
+    await fetchPatients();
   }
 
+  // attach
   async function attachPatient(e) {
     e.preventDefault();
-    try {
-      // Attach by IPP to current professional
-      await api(token).post('/patients/attach', { ipp: attachIPP });
-      setAttachIPP('');
-      await fetchPatients();
-    } catch (err) {
-      console.error(err);
-      alert("Échec de l'attachement du patient.");
-    }
+    await api(token).post('/patients/attach', { ipp: attachIPP, pathologie: attachPatho || null });
+    setAttachIPP(''); setAttachPatho('');
+    await fetchPatients();
   }
 
   const canEdit = Array.isArray(roles) && (roles.includes('medecin') || roles.includes('secretaire'));
@@ -78,6 +70,9 @@ export default function Patients({ token, roles }) {
                    onChange={e => setNewPatient({ ...newPatient, prenom: e.target.value })} required />
             <input type="date" placeholder="Date de naissance" value={newPatient.date_naissance}
                    onChange={e => setNewPatient({ ...newPatient, date_naissance: e.target.value })} required />
+            <input placeholder="Pathologie (optionnel)"
+                   value={newPatient.pathologie}
+                   onChange={e => setNewPatient({ ...newPatient, pathologie: e.target.value })} />
             <button type="submit">Créer le patient</button>
           </form>
 
@@ -85,6 +80,8 @@ export default function Patients({ token, roles }) {
           <form onSubmit={attachPatient} style={{ display: 'flex', gap: 8, maxWidth: 400 }}>
             <input placeholder="IPP du patient" value={attachIPP}
                    onChange={e => setAttachIPP(e.target.value)} required />
+            <input placeholder="Pathologie (optionnel)"
+                   value={attachPatho} onChange={e => setAttachPatho(e.target.value)} />
             <button type="submit">Rattacher</button>
           </form>
         </>
