@@ -239,20 +239,83 @@ app.post('/api/patients/attach', keycloak.protect(), async (req, res) => {
 });
 
 // =================== Rendez-vous ===================
+// GET rendezvous for a patient
+app.get('/api/rendezvous', keycloak.protect(), async (req, res) => {
+  try {
+    const { username, roles } = getKC(req);
+    const patientId = Number(req.query.patient_id);
+    if (!Number.isInteger(patientId)) return res.status(400).json({ error: 'bad patient id' });
+
+    let allowed = false;
+    if (roles.includes('medecin') || roles.includes('infirmier')) {
+      const pro = await getProByUsername(username);
+      const x = await pool.query(
+        'SELECT 1 FROM cercle_soins WHERE professionnel_id=$1 AND patient_id=$2',
+        [pro.id, patientId]
+      );
+      allowed = x.rowCount > 0;
+    } else if (roles.includes('secretaire')) {
+      const pro = await getProByUsername(username);
+      const x = await pool.query(
+        'SELECT 1 FROM patient WHERE id=$1 AND structure_id=$2',
+        [patientId, pro.structure_id]
+      );
+      allowed = x.rowCount > 0;
+    } else if (roles.includes('patient')) {
+      const me = await getPatientByIPP(username);
+      allowed = !!me && me.id === patientId;
+    }
+    if (!allowed) return res.status(403).json({ error: 'forbidden' });
+
+    const rows = (await pool.query(
+      'SELECT * FROM rendezvous WHERE patient_id=$1 ORDER BY date_debut',
+      [patientId]
+    )).rows;
+    return res.json(rows);
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: e.message });
+  }
+});
+
+// POST new rendezvous
 app.post('/api/rendezvous', keycloak.protect(), async (req, res) => {
   try {
-    const user = extractUserInfo(req);
-    if (!user.roles.includes('medecin') && !user.roles.includes('secretaire') && !user.roles.includes('infirmier')) {
-      return res.status(403).json({ error: 'Not allowed to create rendezvous' });
+    const { username, roles } = getKC(req);
+    if (!roles.includes('medecin') && !roles.includes('secretaire'))
+      return res.status(403).json({ error: 'no access' });
+
+    const { patient_id, date_debut, date_fin, objet } = req.body || {};
+    if (!patient_id || !date_debut || !date_fin || !objet)
+      return res.status(400).json({ error: 'missing fields' });
+
+    const patientId = Number(patient_id);
+    const pro = await getProByUsername(username);
+
+    // same checks as above
+    if (roles.includes('medecin')) {
+      const x = await pool.query(
+        'SELECT 1 FROM cercle_soins WHERE professionnel_id=$1 AND patient_id=$2',
+        [pro.id, patientId]
+      );
+      if (!x.rowCount) return res.status(403).json({ error: 'forbidden' });
+    } else {
+      const x = await pool.query(
+        'SELECT 1 FROM patient WHERE id=$1 AND structure_id=$2',
+        [patientId, pro.structure_id]
+      );
+      if (!x.rowCount) return res.status(403).json({ error: 'forbidden' });
     }
-    const { patient_id, date_debut, date_fin, objet } = req.body;
-    const createur_id = parseInt(user.id_professionnel, 10);
-    const insertQuery = 'INSERT INTO rendezvous (patient_id, createur_id, date_debut, date_fin, objet) VALUES ($1,$2,$3,$4,$5) RETURNING *';
-    const { rows } = await pool.query(insertQuery, [patient_id, createur_id, date_debut, date_fin, objet]);
-    return res.status(201).json(rows[0]);
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: err.message });
+
+    const ins = await pool.query(
+      `INSERT INTO rendezvous (patient_id, createur_id, date_debut, date_fin, objet)
+       VALUES ($1,$2,$3,$4,$5) RETURNING id`,
+      [patientId, pro.id, date_debut, date_fin, objet]
+    );
+    return res.status(201).json({ id: ins.rows[0].id });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: e.message });
   }
 });
 
@@ -357,24 +420,85 @@ app.get('/api/documents/:patientId', keycloak.protect(), async (req, res) => {
 });
 
 // =================== Résultats d’analyses ===================
-app.post('/api/resultat_analyse', keycloak.protect(), async (req, res) => {
+// GET analyses
+app.get('/api/resultats/:patientId', keycloak.protect(), async (req, res) => {
   try {
-    const user = extractUserInfo(req);
-    if (!user.roles.includes('medecin')) return res.status(403).json({ error: 'Only medecin can add result' });
-    const { patient_id, contenu } = req.body;
-    const prescripteur_id = parseInt(user.id_professionnel, 10);
-    const insertQuery = 'INSERT INTO resultat_analyse (patient_id, prescripteur_id, contenu) VALUES ($1,$2,$3) RETURNING *';
-    const { rows } = await pool.query(insertQuery, [patient_id, prescripteur_id, contenu]);
+    const { username, roles } = getKC(req);
+    const patientId = Number(req.params.patientId);
+    if (!Number.isInteger(patientId)) return res.status(400).json({ error: 'bad patient id' });
 
-    // 🚨 Alertes automatiques pour secrétaires et prescripteur
-    console.log(`ALERTE: nouveau résultat d'analyse pour patient ${patient_id}, prescripteur ${prescripteur_id}`);
+    let allowed = false;
+    if (roles.includes('medecin') || roles.includes('infirmier')) {
+      const pro = await getProByUsername(username);
+      const x = await pool.query(
+        'SELECT 1 FROM cercle_soins WHERE professionnel_id=$1 AND patient_id=$2',
+        [pro.id, patientId]
+      );
+      allowed = x.rowCount > 0;
+    } else if (roles.includes('secretaire')) {
+      const pro = await getProByUsername(username);
+      const x = await pool.query(
+        'SELECT 1 FROM patient WHERE id=$1 AND structure_id=$2',
+        [patientId, pro.structure_id]
+      );
+      allowed = x.rowCount > 0;
+    } else if (roles.includes('patient')) {
+      const me = await getPatientByIPP(username);
+      allowed = !!me && me.id === patientId;
+    }
+    if (!allowed) return res.status(403).json({ error: 'forbidden' });
 
-    return res.status(201).json(rows[0]);
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: err.message });
+    const rows = (await pool.query(
+      'SELECT * FROM resultat_analyse WHERE patient_id=$1 ORDER BY date_reception DESC',
+      [patientId]
+    )).rows;
+    return res.json(rows);
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: e.message });
   }
 });
+
+// POST new analyse
+app.post('/api/resultats', keycloak.protect(), async (req, res) => {
+  try {
+    const { username, roles } = getKC(req);
+    if (!roles.includes('medecin') && !roles.includes('secretaire'))
+      return res.status(403).json({ error: 'no access' });
+
+    const { patient_id, contenu } = req.body || {};
+    const patientId = Number(patient_id);
+    if (!contenu || !Number.isInteger(patientId))
+      return res.status(400).json({ error: 'missing fields' });
+
+    const pro = await getProByUsername(username);
+
+    if (roles.includes('medecin')) {
+      const x = await pool.query(
+        'SELECT 1 FROM cercle_soins WHERE professionnel_id=$1 AND patient_id=$2',
+        [pro.id, patientId]
+      );
+      if (!x.rowCount) return res.status(403).json({ error: 'forbidden' });
+    } else {
+      const x = await pool.query(
+        'SELECT 1 FROM patient WHERE id=$1 AND structure_id=$2',
+        [patientId, pro.structure_id]
+      );
+      if (!x.rowCount) return res.status(403).json({ error: 'forbidden' });
+    }
+
+    const ins = await pool.query(
+      `INSERT INTO resultat_analyse (patient_id, prescripteur_id, contenu, date_reception)
+       VALUES ($1,$2,$3,NOW()) RETURNING id`,
+      [patientId, pro.id, contenu]
+    );
+    return res.status(201).json({ id: ins.rows[0].id });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: e.message });
+  }
+});
+
 
 // =================== Messagerie interne ===================
 app.post('/api/messages', keycloak.protect(), async (req, res) => {
