@@ -98,7 +98,3 @@ Toutes les classes sont définit dans le fichier `init_db.sql`.
 
 * Si le port `5432` (Postgres) est déjà utilisé, je vous conseille de manuellement arrêter celui-ci avant de relancer l'application.
 * Les données Keycloak sont réinitialisées à chaque `docker compose down -v`.
-
-```
-
----
