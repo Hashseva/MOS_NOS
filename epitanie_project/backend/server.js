@@ -66,6 +66,11 @@ async function getPatientByUsername(username) {
   return r.rows[0];
 }
 
+async function getPatientByIPP(ipp) {
+  const r = await pool.query('SELECT id, structure_id FROM patient WHERE ipp = $1', [ipp]);
+  return r.rows[0];
+}
+
 // =================== Patients ===================
 app.get('/api/patients', keycloak.protect(), async (req, res) => {
   try {
@@ -252,48 +257,102 @@ app.post('/api/rendezvous', keycloak.protect(), async (req, res) => {
 });
 
 // =================== Documents ===================
-app.post('/api/document', keycloak.protect(), async (req, res) => {
+app.post('/api/documents', keycloak.protect(), async (req, res) => {
   try {
-    const user = extractUserInfo(req);
-    if (!user.roles.includes('medecin') && !user.roles.includes('secretaire') && !user.roles.includes('infirmier')) {
-      return res.status(403).json({ error: 'Not allowed to add document' });
+    const { username, roles } = getKC(req);
+    if (!roles.includes('medecin') && !roles.includes('secretaire')) {
+      return res.status(403).json({ error: 'no access' });
     }
-    const { patient_id, type, contenu } = req.body;
-    const auteur_id = parseInt(user.id_professionnel, 10);
-    const insertQuery = 'INSERT INTO document (patient_id, auteur_id, type, contenu) VALUES ($1,$2,$3,$4) RETURNING *';
-    const { rows } = await pool.query(insertQuery, [patient_id, auteur_id, type, contenu]);
-    return res.status(201).json(rows[0]);
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: err.message });
+
+    const { patient_id, type, contenu } = req.body || {};
+    const patientId = Number(patient_id);
+    if (!Number.isInteger(patientId) || !type || !contenu) {
+      return res.status(400).json({ error: 'missing fields' });
+    }
+
+    const pro = await getProByUsername(username);
+    if (!pro) return res.status(403).json({ error: 'professional not found' });
+
+    // access check
+    if (roles.includes('medecin')) {
+      const x = await pool.query(
+        'SELECT 1 FROM cercle_soins WHERE professionnel_id = $1 AND patient_id = $2',
+        [pro.id, patientId]
+      );
+      if (!x.rowCount) return res.status(403).json({ error: 'forbidden' });
+    } else {
+      // secretaire: same structure
+      const y = await pool.query(
+        'SELECT 1 FROM patient WHERE id = $1 AND structure_id = $2',
+        [patientId, pro.structure_id]
+      );
+      if (!y.rowCount) return res.status(403).json({ error: 'forbidden' });
+    }
+
+    const ins = await pool.query(
+      `INSERT INTO document (patient_id, auteur_id, type, contenu, date_creation)
+       VALUES ($1, $2, $3, $4, NOW())
+       RETURNING id`,
+      [patientId, pro.id, type, contenu]
+    );
+
+    return res.status(201).json({ id: ins.rows[0].id });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: e.message || 'server error' });
   }
 });
 
 // GET documents d’un patient
 app.get('/api/documents/:patientId', keycloak.protect(), async (req, res) => {
   try {
-    const user = extractUserInfo(req);
-    const pid = parseInt(req.params.patientId, 10);
+    const { username, roles } = getKC(req);
+    const patientId = Number(req.params.patientId);
+    if (!Number.isInteger(patientId)) return res.status(400).json({ error: 'bad patientId' });
 
-    let allowedIds = [];
-    if (user.roles.includes('medecin') || user.roles.includes('infirmier')) {
-      const profId = parseInt(user.id_professionnel, 10);
-      const rows = (await pool.query('SELECT patient_id FROM cercle_soins WHERE professionnel_id = $1', [profId])).rows;
-      allowedIds = rows.map(r => r.patient_id);
-    } else if (user.roles.includes('secretaire')) {
-      const profId = parseInt(user.id_professionnel, 10);
-      const rows = (await pool.query('SELECT id FROM patient WHERE structure_id = (SELECT structure_id FROM professionnel WHERE id=$1)', [profId])).rows;
-      allowedIds = rows.map(r => r.id);
-    } else if (user.roles.includes('patient')) {
-      allowedIds = [parseInt(user.id_patient, 10)];
+    let allowed = false;
+
+    if (roles.includes('medecin') || roles.includes('infirmier')) {
+      const pro = await getProByUsername(username);
+      if (!pro) return res.status(403).json({ error: 'professional not found' });
+
+      // must be in the care circle
+      const x = await pool.query(
+        'SELECT 1 FROM cercle_soins WHERE professionnel_id = $1 AND patient_id = $2',
+        [pro.id, patientId]
+      );
+      allowed = x.rowCount > 0;
+
+    } else if (roles.includes('secretaire')) {
+      const pro = await getProByUsername(username);
+      if (!pro) return res.status(403).json({ error: 'professional not found' });
+
+      // same structure
+      const x = await pool.query(
+        'SELECT 1 FROM patient WHERE id = $1 AND structure_id = $2',
+        [patientId, pro.structure_id]
+      );
+      allowed = x.rowCount > 0;
+
+    } else if (roles.includes('patient')) {
+      // KC username for patients is the IPP
+      const me = await getPatientByIPP(username);
+      allowed = !!me && me.id === patientId;
+    } else {
+      return res.status(403).json({ error: 'no access' });
     }
 
-    if (!allowedIds.includes(pid)) return res.status(403).json({ error: 'Not allowed' });
-    const rows = (await pool.query('SELECT * FROM document WHERE patient_id=$1', [pid])).rows;
-    return res.json(rows);
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: err.message });
+    if (!allowed) return res.status(403).json({ error: 'forbidden' });
+
+    const docs = (await pool.query(
+      'SELECT * FROM document WHERE patient_id = $1 ORDER BY date_creation DESC',
+      [patientId]
+    )).rows;
+
+    return res.json(docs);
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: e.message || 'server error' });
   }
 });
 
