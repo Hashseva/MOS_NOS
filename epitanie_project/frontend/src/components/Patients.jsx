@@ -54,7 +54,20 @@ export default function Patients({ token, roles }) {
 
       {patients.length === 0
         ? <p>Aucun patient accessible</p>
-        : <ul>{patients.map(p => <li key={p.id}>{p.prenom} {p.nom} — IPP: {p.ipp}</li>)}</ul>
+        : (
+            <ul style={{ padding: 0, listStyle: 'none' }}>
+              {patients.map(p => (
+                <li key={p.id} style={{ margin: '8px 0', padding: '8px', border: '1px solid #ddd', borderRadius: 8 }}>
+                  <div><b>{p.nom} {p.prenom}</b> — IPP: {p.ipp}</div>
+                  <div>Naissance : {new Date(p.date_naissance).toLocaleDateString()}</div>
+                  <div>
+                    Pathologie{p.pathologie && p.pathologie.includes(',') ? 's' : ''} :{" "}
+                    {p.pathologie ? p.pathologie : <i>—</i>}
+                  </div>
+                </li>
+              ))}
+            </ul> 
+          )
       }
 
       {canEdit && (

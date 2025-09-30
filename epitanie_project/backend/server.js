@@ -73,47 +73,57 @@ app.get('/api/patients', keycloak.protect(), async (req, res) => {
   try {
     const { username, roles } = getKC(req);
 
-    let rows = [];
-
     if (roles.includes('medecin') || roles.includes('infirmier')) {
       const pro = await getProByUsername(username);
-      if (!pro) return res.status(403).json({ error: 'professional not found' });
-
+      // renvoie la pathologie liée à CE pro via cercle_soins
       const q = `
-        SELECT p.*
+        SELECT p.*, cs.pathologie
         FROM patient p
-        JOIN cercle_soins cs ON cs.patient_id = p.id
-        WHERE cs.professionnel_id = $1
+        JOIN cercle_soins cs
+          ON cs.patient_id = p.id
+         AND cs.professionnel_id = $1
+        ORDER BY p.nom, p.prenom
       `;
-      rows = (await pool.query(q, [pro.id])).rows;
-
-    } else if (roles.includes('secretaire')) {
-      const pro = await getProByUsername(username);
-      if (!pro) return res.status(403).json({ error: 'professional not found' });
-
-      const q = `
-        SELECT p.*
-        FROM patient p
-        WHERE p.structure_id = $1
-      `;
-      rows = (await pool.query(q, [pro.structure_id])).rows;
-
-    } else if (roles.includes('patient')) {
-      const pat = await getPatientByIPP(username); // username = IPP-000x
-      if (!pat) return res.status(403).json({ error: 'patient not found' });
-      rows = [pat];
-
-    } else {
-      return res.status(403).json({ error: 'No access' });
+      const rows = (await pool.query(q, [pro?.id || -1])).rows;
+      return res.json(rows);
     }
 
-    return res.json(rows);
-  } catch (err) {
-    console.error(err);
-    const msg = err.message === 'no-token' ? 'unauthorized' : err.message || 'server error';
-    return res.status(500).json({ error: msg });
+    if (roles.includes('secretaire')) {
+      const pro = await getProByUsername(username);
+      // pas de lien direct au pro : on laisse pathologie à NULL
+      const rows = (await pool.query(
+        `SELECT p.*, NULL::text AS pathologie
+           FROM patient p
+          WHERE p.structure_id = $1
+          ORDER BY p.nom, p.prenom`,
+        [pro?.structure_id || -1]
+      )).rows;
+      return res.json(rows);
+    }
+
+    if (roles.includes('patient')) {
+      const me = await getPatientByIPP(username);
+      if (!me) return res.json([]);
+      // pour un patient, on peut agréger TOUTES ses pathologies
+      const rows = (await pool.query(
+        `SELECT p.*,
+                (SELECT string_agg(cs.pathologie, ', ' ORDER BY cs.pathologie)
+                   FROM cercle_soins cs
+                  WHERE cs.patient_id = p.id) AS pathologie
+           FROM patient p
+          WHERE p.id = $1`,
+        [me.id]
+      )).rows;
+      return res.json(rows);
+    }
+
+    return res.status(403).json({ error: 'No access' });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: e.message || 'server error' });
   }
 });
+
 
 app.get('/api/patients/:id', keycloak.protect(), async (req, res) => {
   try {
