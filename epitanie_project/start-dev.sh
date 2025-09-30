@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Absolute path to the folder that contains this script (robust in WSL/OneDrive)
+#SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
+
 # -----------------------------
 # Config (ajuste si besoin)
 # -----------------------------
@@ -23,6 +26,16 @@ echo "🚀 Starting Epitanie stack..."
 echo "🔪 Killing old backend/frontend processes..."
 lsof -ti:4000 | xargs -r kill -9 || true
 lsof -ti:5173 | xargs -r kill -9 || true
+
+# -----------------------------
+# Kill any host Postgres running on port 5432
+# -----------------------------
+#if lsof -i:5432 >/dev/null; then
+#  echo "🛑 A local Postgres is running on port 5432. Killing it..."
+#  lsof -ti:5432 | xargs -r kill -9 || true
+#fi
+
+docker compose down -v
 
 # -----------------------------
 # Docker services
@@ -112,6 +125,16 @@ fi
 
 # Vérifie que le realm est accessible
 wait_for_url "$KEYCLOAK_BASE/realms/$REALM/.well-known/openid-configuration" 60 2
+
+# 3) exécuter le populate pour rôles + utilisateurs
+echo "👤 Populating Keycloak roles & users..."
+if [ -f "./populate_keycloak.js" ]; then
+  node ./populate_keycloak.js
+elif [ -f "./scripts/populate_keycloak.js" ]; then
+  (cd scripts && node populate_keycloak.js)
+else
+  echo "⚠️  populate_keycloak.js introuvable — skip."
+fi
 
 # -----------------------------
 # Backend & Frontend

@@ -8,6 +8,7 @@ services:
     ports:
       - '5432:5432'
     volumes:
+      - ./init_db.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
       - pgdata:/var/lib/postgresql/data
 
   keycloak:

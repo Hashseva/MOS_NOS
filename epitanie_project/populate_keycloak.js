@@ -18,6 +18,54 @@ const users = [
   { username: 'IPP-0003', firstName: 'Linh', lastName: 'Nguyen', role: 'patient', password: 'test' },
 ];
 
+async function ensureRole(token, roleName) {
+  try {
+    await axios.get(`${KEYCLOAK_URL}/admin/realms/${REALM}/roles/${roleName}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  } catch {
+    await axios.post(`${KEYCLOAK_URL}/admin/realms/${REALM}/roles`,
+      { name: roleName },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    console.log(`Role ${roleName} created.`);
+  }
+}
+
+// assign role to user (realm role mapping) - axios version
+async function assignRealmRoleToUser(token, username, roleName) {
+  // find user
+  const userRes = await axios.get(
+    `${KEYCLOAK_URL}/admin/realms/${REALM}/users?username=${encodeURIComponent(username)}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!userRes.data.length) throw new Error(`user ${username} not found`);
+  const userId = userRes.data[0].id;
+
+  // find role
+  const roleRes = await axios.get(
+    `${KEYCLOAK_URL}/admin/realms/${REALM}/roles/${encodeURIComponent(roleName)}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  const roleObj = roleRes.data;
+
+  // check if user already has it
+  const userRolesRes = await axios.get(
+    `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userId}/role-mappings/realm`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  const hasRole = userRolesRes.data.some(r => r.name === roleName);
+  if (hasRole) return;
+
+  // assign
+  await axios.post(
+    `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userId}/role-mappings/realm`,
+    [{ id: roleObj.id, name: roleObj.name }],
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+}
+
+
 async function main() {
   try {
     // 1️⃣ Obtenir un token admin
@@ -30,6 +78,12 @@ async function main() {
       })
     );
     const token = tokenRes.data.access_token;
+
+    await ensureRole(token, 'medecin');
+    await ensureRole(token, 'infirmier');
+    await ensureRole(token, 'secretaire');
+    await ensureRole(token, 'patient');
+
 
     for (const user of users) {
       try {
@@ -48,6 +102,8 @@ async function main() {
             enabled: true,
             credentials: [{ type: 'password', value: user.password, temporary: false }]
           }, { headers: { Authorization: `Bearer ${token}` } });
+
+          await assignRealmRoleToUser(token, user.username, user.role);
 
           console.log(`User ${user.username} created.`);
         }
