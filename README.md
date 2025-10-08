@@ -1,3 +1,7 @@
+Projet de:
+ - David GONCALVES (david.goncalves)
+ - Paul Rousseau (paul.rousseau)
+
 # Épitanie Project MOS NOS
 
 ## 🚀 Lancement du projet
