@@ -5,7 +5,9 @@ export default function Analyses({ token, roles }) {
   const [patients, setPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState('');
   const [analyses, setAnalyses] = useState([]);
-  const [newAnalyse, setNewAnalyse] = useState({ contenu: '' });
+  
+  // Utilisation de code_analyse
+  const [newAnalyse, setNewAnalyse] = useState({ code_analyse: 'GLUCOSE', contenu: '' });
 
   useEffect(() => { fetchPatients(); }, []);
 
@@ -31,7 +33,7 @@ export default function Analyses({ token, roles }) {
     e.preventDefault();
     try{
       await api(token).post('/resultats', {...newAnalyse, patient_id:selectedPatient});
-      setNewAnalyse({contenu:''});
+      setNewAnalyse({ code_analyse:'GLUCOSE', contenu:''});
       fetchAnalyses(selectedPatient);
     }catch(err){ console.error(err);}
   }
@@ -47,12 +49,27 @@ export default function Analyses({ token, roles }) {
       </div>
 
       <ul>
-        {analyses.map(a=><li key={a.id}>{a.contenu} — {new Date(a.date_reception).toLocaleString()}</li>)}
+        {analyses.map(a=>(
+          <li key={a.id}>
+            {/* Affichage du libellé standardisé */}
+            <strong>{a.analyse_libelle || a.code_analyse}</strong> — {a.contenu}
+            <br/>
+            <small>{new Date(a.date_reception).toLocaleString()}</small>
+          </li>
+        ))}
       </ul>
 
       {(roles.includes('medecin') || roles.includes('secretaire')) &&
         <form onSubmit={addAnalyse}>
-          <input placeholder="Contenu" value={newAnalyse.contenu} onChange={e=>setNewAnalyse({...newAnalyse,contenu:e.target.value})} required />
+          {/* Sélection code analyse */}
+          <select value={newAnalyse.code_analyse} onChange={e=>setNewAnalyse({...newAnalyse, code_analyse:e.target.value})}>
+             <option value="GLUCOSE">Glycémie</option>
+             <option value="TSH">TSH (Thyroïde)</option>
+             <option value="NFS">Numération Formule Sanguine</option>
+          </select>
+
+          <input placeholder="Valeur / Résultat" value={newAnalyse.contenu} 
+                 onChange={e=>setNewAnalyse({...newAnalyse,contenu:e.target.value})} required />
           <button type="submit">Ajouter analyse</button>
         </form>}
     </div>

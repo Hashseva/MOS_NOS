@@ -96,7 +96,7 @@ create_realm_and_client_with_kcadm () {
 
   # ID du client
   CID=$(docker compose exec -T "$KEYCLOAK_SVC" /opt/keycloak/bin/kcadm.sh get clients -r "$REALM" -q clientId="$FRONT_CLIENT_ID" \
-        | tr -d '\r' | grep -oE '"id"\s*:\s*"[^"]+"' | head -n1 | sed 's/.*"id"\s*:\s*"\([^"]*\)".*/\1/')
+        | tr -d '\r' | grep -oE '"id"[^"]*"[^"]*"' | head -n1 | cut -d '"' -f4)
 
   if [ -z "$CID" ]; then
     echo "❌ Impossible de récupérer l'ID du client $FRONT_CLIENT_ID"
