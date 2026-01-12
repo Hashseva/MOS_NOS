@@ -90,6 +90,120 @@ Depuis l’interface Keycloak, vous pouvez :
 
 ---
 
+## 🧪 FHIR API minimal (TP2)
+
+Endpoints (R4 simplifiés, lecture seule):
+* `GET /fhir/Patient/:id`
+* `GET /fhir/Practitioner/:id`
+* `GET /fhir/Organization/:id`
+* `GET /fhir/Observation/:id`
+* `GET /fhir/DocumentReference/:id`
+* `GET /fhir/Appointment/:id`
+* `GET /fhir/samples/td2` (bundle d'exemple pour le scénario TP2)
+
+Exemple payload (Patient):
+```json
+{
+  "resourceType": "Patient",
+  "id": "1",
+  "identifier": [{ "system": "urn:oid:1.2.250.1.213.1.4.2", "value": "IPP-0001" }],
+  "name": [{ "family": "Petit", "given": ["Jean"] }],
+  "gender": "male",
+  "birthDate": "1980-05-12"
+}
+```
+
+Exemple payload (Observation - résultat analyse):
+```json
+{
+  "resourceType": "Observation",
+  "id": "1",
+  "status": "final",
+  "code": { "coding": [{ "system": "http://loinc.org", "code": "GLUCOSE" }] },
+  "subject": { "reference": "Patient/1" },
+  "performer": [{ "reference": "Practitioner/1" }],
+  "effectiveDateTime": "2025-01-02T10:00:00.000Z",
+  "valueString": "Glycémie : 1.2 g/L"
+}
+```
+
+---
+
+## 🧾 Exemple : utilisé les endpoint fhir.js
+
+```bash
+curl -s -X POST "http://localhost:8080/realms/epitanie/protocol/openid-connect/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=password" \
+  -d "client_id=admin-cli" \
+  -d "username=admin" \
+  -d "password=admin"
+```
+
+Copié l'access token puis:
+
+```bash
+curl -s "http://localhost:4000/fhir/Patient/1" \
+  -H "Authorization: Bearer <ACCESS_TOKEN>"
+```
+
+---
+
+## 🧩 Mise en correspondance MOS → FHIR (TP2)
+
+Mise en correspondance basée sur MOS (ANS) + adaptation à notre modèle simplifié.
+
+| MOS / Donnée | Table(s) | FHIR R4 |
+| --- | --- | --- |
+| PersonnePriseCharge | `patient` | `Patient` |
+| Professionnel | `professionnel` | `Practitioner` |
+| ExerciceProfessionnel / SituationExercice | `professionnel` | `PractitionerRole` |
+| EntiteJuridique / EntiteGeographique | `structure` | `Organization` (avec `partOf`) |
+| RendezVous | `rendezvous` | `Appointment` |
+| Observation (résultat analyse) | `resultat_analyse` | `Observation` (+ `DiagnosticReport` si regroupement) |
+| Document | `document` | `DocumentReference` (non explicité dans MOS) |
+| Cercle de soins | `cercle_soins` | `CareTeam` (choix pragmatique) |
+| Messagerie | `message` | `Communication` (choix pragmatique) |
+
+---
+
+## 🔁 Scénario d’échange (TP2)
+
+1) **Endocrinologue → Plateforme**  
+   Envoi d’un compte-rendu + prescription (TSH/T3/T4 + échographie).
+2) **Plateforme → Labo**  
+   Transmission de la prescription d’analyses.
+3) **Labo → Plateforme**  
+   Retour des résultats (Observations) + DiagnosticReport.
+4) **Plateforme → Hôpital**  
+   Envoi du CR + demande d’échographie.
+5) **Hôpital → Plateforme**  
+   Retour du CR d’imagerie.
+6) **Plateforme → Médecin & Patient**  
+   Notifications (Communication).
+
+---
+
+## 🧭 Profils IHE et nomenclatures (TP2)
+
+**Profils IHE pertinents**
+* XDS.b / XDS-I (partage de documents / imagerie)
+* MHD (accès REST/FHIR à la logique XDS)
+* XDW (workflow documentaire)
+* PIX/PDQ (identité patient, si multi-identifiants)
+* ATNA (audit / traçabilité)
+
+**Nomenclatures adaptées**
+* LOINC (analyses biologiques)
+* SNOMED CT (actes / concepts cliniques)
+* CIM-10 (pathologies)
+* CCAM (actes, imagerie)
+* ATC (médicaments)
+* UCUM (unités)
+* Référentiels ANS (TRE_G15, TRE_R66, etc.)
+
+---
+
 ## 📖 Respect du MOS (Modèle Opérationnel de Santé)
 
 - **Patient** (`patient`, comptes `ipp-xxxx` dans Keycloak)  
@@ -99,6 +213,36 @@ Depuis l’interface Keycloak, vous pouvez :
 - **Documents, Résultats, Rendez-vous, Messages** : ressources partagées dans le cercle de soins
 
 Toutes les classes sont définit dans le fichier `init_db.sql`.
+
+---
+
+## ✅ Matrice d’habilitations (version TD1)
+
+Matrice simplifiée correspondant à l’implémentation actuelle (Keycloak + règles appliquées côté backend/frontend).
+
+| Rôle | Patients (liste) | Détails patient | Documents | Résultats analyses | Rendez-vous | Messagerie |
+| ---- | ---------------- | --------------- | --------- | ------------------ | ----------- | ---------- |
+| **Médecin** | Patients de son cercle de soins | Oui | Lire + créer | Lire + créer | Lire + créer | Lire + envoyer |
+| **Infirmier** | Patients de son cercle de soins | Oui | Lire | Lire | Lire | Lire + envoyer |
+| **Secrétaire** | Patients de sa structure | Oui | Lire + créer | Lire + créer | Lire + créer | Lire + envoyer |
+| **Patient** | Lui-même | Oui | Lire | Lire | Lire | Lire + envoyer |
+
+Notes :
+* Les contrôles sont volontairement simplifiés pour le TD (ex : vérification “cercle de soins” non systématique).
+* La logique est cohérente avec les écrans disponibles dans le frontend et les endpoints sécurisés du backend.
+
+---
+
+## 🧾 Sources, prompts, choix et esprit critique
+
+**Choix d’implémentation**
+* Sous-ensemble MOS/NOS ciblé : patient, professionnel, structure, cercle de soins, documents, rendez-vous, résultats, messages.
+* Codes NOS intégrés dans `ref_nomenclature` pour la traduction côté UI.
+* Authentification/autorisation via Keycloak (rôles simples).
+
+**Esprit critique / limites**
+* Les règles d’habilitation sont simplifiées (pas de matrice fine par type de document ou par contexte).
+* Certains codes sont “adaptés” pour le TD (ex: catégorie “CAB”) et ne sont pas des références officielles exhaustives.
 
 ---
 

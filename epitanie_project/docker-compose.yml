@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: epitanie
       POSTGRES_DB: epitanie
     ports:
-      - '5432:5432'
+      - '5433:5432'
     volumes:
       - ./init_db.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
       - pgdata:/var/lib/postgresql/data

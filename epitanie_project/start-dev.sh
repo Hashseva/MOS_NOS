@@ -3,6 +3,7 @@ set -euo pipefail
 
 # Absolute path to the folder that contains this script (robust in WSL/OneDrive)
 #SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
+#cd "$SCRIPT_DIR"
 
 # -----------------------------
 # Config (ajuste si besoin)
@@ -140,8 +141,18 @@ fi
 # Backend & Frontend
 # -----------------------------
 echo "🔧 Starting backend (Express)…"
-( cd backend && [ ! -d node_modules ] && npm install || true )
-( cd backend && npm start & )
+( export PG_HOST=localhost
+  export PG_PORT=5433
+  export PG_USER=epitanie
+  export PG_PASSWORD=epitanie
+  export PG_DATABASE=epitanie
+  cd backend && [ ! -d node_modules ] && npm install || true )
+( export PG_HOST=localhost
+  export PG_PORT=5433
+  export PG_USER=epitanie
+  export PG_PASSWORD=epitanie
+  export PG_DATABASE=epitanie
+  cd backend && npm start & )
 
 echo "🌐 Starting frontend (Vite)…"
 ( cd frontend && [ ! -d node_modules ] && npm install || true )

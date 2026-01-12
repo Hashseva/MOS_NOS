@@ -5,14 +5,15 @@ const Keycloak = require('keycloak-connect');
 const { Pool } = require('pg');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const { fhirRouter } = require('./fhir');
 
 const PORT = process.env.PORT || 4000;
 const PG_CONFIG = {
-  host: 'localhost',
-  user: 'epitanie',
-  password: 'epitanie',
-  database: 'epitanie',
-  port: 5432
+  host: process.env.PG_HOST || 'localhost',
+  user: process.env.PG_USER || 'epitanie',
+  password: process.env.PG_PASSWORD || 'epitanie',
+  database: process.env.PG_DATABASE || 'epitanie',
+  port: Number(process.env.PG_PORT) || 5433
 };
 
 const pool = new Pool(PG_CONFIG);
@@ -32,6 +33,7 @@ app.use(session({
 
 const keycloak = new Keycloak({ store: memoryStore });
 app.use(keycloak.middleware());
+app.use('/fhir', fhirRouter(pool, keycloak));
 
 // --- Helpers ---
 
