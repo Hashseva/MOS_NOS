@@ -2,135 +2,96 @@ Projet de:
  - David GONCALVES (david.goncalves)
  - Paul Rousseau (paul.rousseau)
 
-# Épitanie Project MOS NOS
+# Epitanie Project MOS NOS
 
-## 🚀 Lancement du projet
+Objectif: une application simple avec base Postgres, authentification Keycloak, backend Express et frontend React.
+Elle permet de consulter/ajouter des patients, documents, rendez-vous, resultats d'analyses et messages.
 
-Prérequis :  
-- Docker & Docker Compose installés  
-- Node.js (≥ v18) si vous souhaitez lancer le backend manuellement  
+---
 
-### Démarrage
+## Demarrage rapide
 
-Dans le dossier `epitanie_project`:
+Prerequis:
+- Docker + Docker Compose
+- Node.js (>= v18) si vous lancez le backend hors script
+
+Depuis la racine du projet:
 
 ```bash
+cd epitanie_project
 npm run install-all
 ./start-dev.sh
-````
-
-Ce script :
-
-* Stoppe les services existants
-* Relance **PostgreSQL** et **Keycloak** via Docker Compose
-* Initialise la base de données (`init_db.sql`)
-* Popule Keycloak avec les rôles et utilisateurs (`populate_keycloak.js`)
-* Lance le backend et le frontend
-
-L’application sera accessible sur :
-
-* Frontend : [http://localhost:5173](http://localhost:5173)
-* Backend : [http://localhost:4000](http://localhost:4000)
-* Keycloak : [http://localhost:8080](http://localhost:8080)
-
----
-
-## 👤 Comptes utilisateurs
-
-Connectez-vous au frontend avec l'un des utilisateurs ci-dessous.
-Tous les utilisateurs ont le mot de passe **`test`**.
-
-| Username       | Rôle(s) Keycloak |
-| -------------- | ---------------- |
-| **idpp-med01** | medecin          |
-| **idpp-med02** | medecin          |
-| **idpp-inf01** | infirmier        |
-| **idpp-sec01** | secretaire       |
-| **ipp-0001**   | patient          |
-| **ipp-0002**   | patient          |
-| **ipp-0003**   | patient          |
-
----
-
-## 🔑 Accès administration Keycloak
-
-* URL : [http://localhost:8080](http://localhost:8080)
-* **Username** : `admin`
-* **Password** : `admin`
-
-Depuis l’interface Keycloak, vous pouvez :
-
-* Voir les utilisateurs existants
-* Gérer leurs rôles
-* Inspecter les tokens d’authentification
-
----
-
-## 🏗️ Architecture du projet
-
-* **Frontend (React / Vite)**
-
-  * Pages : Patients, Documents, Rendez-vous, Résultats d’analyses, Messagerie interne
-  * Authentification via Keycloak
-
-* **Backend (Node.js + Express)**
-
-  * Expose des endpoints REST protégés par Keycloak
-  * Gère les patients, documents, rendez-vous, résultats, messages
-
-* **Base de données (PostgreSQL)**
-
-  * Tables principales : `patient`, `professionnel`, `cercle_soins`, `documents`, `rendezvous`, `analyses`, `message`
-  * Initialisation avec `init_db.sql`
-
-* **Keycloak**
-
-  * Gère les rôles : `medecin`, `infirmier`, `secretaire`, `patient`
-  * Sécurise les endpoints backend
-
----
-
-## 🧪 FHIR API minimal (TP2)
-
-Endpoints (R4 simplifiés, lecture seule):
-* `GET /fhir/Patient/:id`
-* `GET /fhir/Practitioner/:id`
-* `GET /fhir/Organization/:id`
-* `GET /fhir/Observation/:id`
-* `GET /fhir/DocumentReference/:id`
-* `GET /fhir/Appointment/:id`
-* `GET /fhir/samples/td2` (bundle d'exemple pour le scénario TP2)
-
-Exemple payload (Patient):
-```json
-{
-  "resourceType": "Patient",
-  "id": "1",
-  "identifier": [{ "system": "urn:oid:1.2.250.1.213.1.4.2", "value": "IPP-0001" }],
-  "name": [{ "family": "Petit", "given": ["Jean"] }],
-  "gender": "male",
-  "birthDate": "1980-05-12"
-}
 ```
 
-Exemple payload (Observation - résultat analyse):
-```json
-{
-  "resourceType": "Observation",
-  "id": "1",
-  "status": "final",
-  "code": { "coding": [{ "system": "http://loinc.org", "code": "GLUCOSE" }] },
-  "subject": { "reference": "Patient/1" },
-  "performer": [{ "reference": "Practitioner/1" }],
-  "effectiveDateTime": "2025-01-02T10:00:00.000Z",
-  "valueString": "Glycémie : 1.2 g/L"
-}
-```
+Le script:
+- relance Postgres + Keycloak via Docker
+- initialise la base (`epitanie_project/init_db.sql`)
+- peuple Keycloak (`epitanie_project/populate_keycloak.js`)
+- lance backend + frontend
+
+URLs:
+- Frontend: http://localhost:5173
+- Backend: http://localhost:4000
+- Keycloak: http://localhost:8080
 
 ---
 
-## 🧾 Exemple : utilisé les endpoint fhir.js
+## Utiliser l'app
 
+1) Ouvrir http://localhost:5173
+2) Se connecter avec un compte (voir ci-dessous)
+3) Naviguer via le menu (patients, documents, rendez-vous, resultats, messages)
+
+Comptes (mot de passe: `test`):
+
+| Username       | Role |
+| -------------- | ---- |
+| idpp-med01     | medecin |
+| idpp-med02     | medecin |
+| idpp-inf01     | infirmier |
+| idpp-sec01     | secretaire |
+| ipp-0001       | patient |
+| ipp-0002       | patient |
+| ipp-0003       | patient |
+
+---
+
+## Acces admin Keycloak
+
+- URL: http://localhost:8080
+- Username: `admin`
+- Password: `admin`
+
+Puis changez le realm en haut à droite à epitanie.
+
+---
+
+## Fichiers importants
+
+- `epitanie_project/start-dev.sh`: demarre tout le stack en dev
+- `epitanie_project/docker-compose.yml`: Postgres + Keycloak
+- `epitanie_project/init_db.sql`: schema + donnees de test
+- `epitanie_project/backend/server.js`: backend REST + securite Keycloak
+- `epitanie_project/frontend/src`: frontend React
+- `epitanie_project/backend/fhir.js`: endpoints FHIR minimaux (lecture)
+- `epitanie_project/backend/fhir-sim.js`: serveur FHIR simple pour simulation TP3
+
+---
+
+## FHIR minimal (TP2)
+
+Endpoints disponibles (lecture):
+- `GET /fhir/Patient/:id`
+- `GET /fhir/Practitioner/:id`
+- `GET /fhir/Organization/:id`
+- `GET /fhir/Observation/:id`
+- `GET /fhir/DocumentReference/:id`
+- `GET /fhir/Appointment/:id`
+- `GET /fhir/samples/td2` (exemple statique)
+
+Pour tester les endpoints, apres avoir lancé l'application, vous pouvez utiliser les commandes suivantes.
+
+Cette commande permet de recuperer un token d'acces (Keycloak):
 ```bash
 curl -s -X POST "http://localhost:8080/realms/epitanie/protocol/openid-connect/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
@@ -140,106 +101,79 @@ curl -s -X POST "http://localhost:8080/realms/epitanie/protocol/openid-connect/t
   -d "password=admin"
 ```
 
-Copié l'access token puis:
+Resultat attendu: un JSON contenant `access_token`.
 
+Une fois récupéré, vous pouvez appeler un endpoint FHIR:
 ```bash
 curl -s "http://localhost:4000/fhir/Patient/1" \
   -H "Authorization: Bearer <ACCESS_TOKEN>"
 ```
 
----
-
-## 🧩 Mise en correspondance MOS → FHIR (TP2)
-
-Mise en correspondance basée sur MOS (ANS) + adaptation à notre modèle simplifié.
-
-| MOS / Donnée | Table(s) | FHIR R4 |
-| --- | --- | --- |
-| PersonnePriseCharge | `patient` | `Patient` |
-| Professionnel | `professionnel` | `Practitioner` |
-| ExerciceProfessionnel / SituationExercice | `professionnel` | `PractitionerRole` |
-| EntiteJuridique / EntiteGeographique | `structure` | `Organization` (avec `partOf`) |
-| RendezVous | `rendezvous` | `Appointment` |
-| Observation (résultat analyse) | `resultat_analyse` | `Observation` (+ `DiagnosticReport` si regroupement) |
-| Document | `document` | `DocumentReference` (non explicité dans MOS) |
-| Cercle de soins | `cercle_soins` | `CareTeam` (choix pragmatique) |
-| Messagerie | `message` | `Communication` (choix pragmatique) |
+Resultat attendu: un JSON FHIR `Patient` (id 1).
 
 ---
 
-## 🔁 Scénario d’échange (TP2)
+## Simulation TP3 (multi-instances FHIR)
 
-1) **Endocrinologue → Plateforme**  
-   Envoi d’un compte-rendu + prescription (TSH/T3/T4 + échographie).
-2) **Plateforme → Labo**  
-   Transmission de la prescription d’analyses.
-3) **Labo → Plateforme**  
-   Retour des résultats (Observations) + DiagnosticReport.
-4) **Plateforme → Hôpital**  
-   Envoi du CR + demande d’échographie.
-5) **Hôpital → Plateforme**  
-   Retour du CR d’imagerie.
-6) **Plateforme → Médecin & Patient**  
-   Notifications (Communication).
+On simule l'echange entre 3 services FHIR (plateforme, medecin, labo).
 
----
+### 1) Lancer 3 instances
 
-## 🧭 Profils IHE et nomenclatures (TP2)
+Chaque commande lance un serveur FHIR simple sur un port different.
+Chaque ligne doivent être lancé dans un terminal différent.
 
-**Profils IHE (mentionnés via le CI-SIS)**
-* IHE (profils abordés dans le cadre du CI-SIS)
+```bash
+node epitanie_project/backend/fhir-sim.js
+PORT=4101 SERVICE_NAME=doctor node epitanie_project/backend/fhir-sim.js
+PORT=4102 SERVICE_NAME=lab node epitanie_project/backend/fhir-sim.js
+```
 
-**Nomenclatures adaptées (mentionnées en cours)**
-* LOINC (analyses biologiques)
-* SNOMED-CT (actes / concepts cliniques)
-* ATC (médicaments)
-* MOS / NOS (référentiels de base)
+Par defaut (port 4100), l'instance represente la plateforme.
 
----
+### 2) Medecin -> Plateforme (CR + prescription)
 
-## 📖 Respect du MOS (Modèle Opérationnel de Santé)
+On envoie un compte-rendu + une prescription a la plateforme.
 
-- **Patient** (`patient`, comptes `ipp-xxxx` dans Keycloak)  
-- **Professionnel de santé** (`professionnel`, comptes `idpp-medxx`, `idpp-infx`)  
-- **Secrétaire** (rôle administratif `idpp-sec01`)  
-- **Cercle de soins** (`cercle_soins`) liant patients et professionnels  
-- **Documents, Résultats, Rendez-vous, Messages** : ressources partagées dans le cercle de soins
+```bash
+curl -s -X POST "http://localhost:4100/fhir/DocumentReference" \
+  -H "Content-Type: application/json" \
+  -d '{"resourceType":"DocumentReference","status":"current","type":{"coding":[{"code":"CR-CONS"}]},"subject":{"reference":"Patient/1"},"content":[{"attachment":{"contentType":"text/plain","data":"Q1IgZW5kb2NyaW5v"}}]}'
 
-Toutes les classes sont définit dans le fichier `init_db.sql`.
+curl -s -X POST "http://localhost:4100/fhir/ServiceRequest" \
+  -H "Content-Type: application/json" \
+  -d '{"resourceType":"ServiceRequest","status":"active","intent":"order","code":{"coding":[{"system":"http://loinc.org","code":"TSH"}]},"subject":{"reference":"Patient/1"}}'
+```
 
----
+Resultat attendu: chaque commande renvoie le JSON cree avec un `id`.
 
-## ✅ Matrice d’habilitations (version TD1)
+### 3) Plateforme -> Labo (transmettre la prescription)
 
-Matrice simplifiée correspondant à l’implémentation actuelle (Keycloak + règles appliquées côté backend/frontend).
+On recupere la prescription de la plateforme et on la pousse vers le labo.
 
-| Rôle | Patients (liste) | Détails patient | Documents | Résultats analyses | Rendez-vous | Messagerie |
-| ---- | ---------------- | --------------- | --------- | ------------------ | ----------- | ---------- |
-| **Médecin** | Patients de son cercle de soins | Oui | Lire + créer | Lire + créer | Lire + créer | Lire + envoyer |
-| **Infirmier** | Patients de son cercle de soins | Oui | Lire | Lire | Lire | Lire + envoyer |
-| **Secrétaire** | Patients de sa structure | Oui | Lire + créer | Lire + créer | Lire + créer | Lire + envoyer |
-| **Patient** | Lui-même | Oui | Lire | Lire | Lire | Lire + envoyer |
+```bash
+curl -s "http://localhost:4100/fhir/ServiceRequest" | \
+python3 -c 'import json,sys; data=json.load(sys.stdin); req=data["entry"][0]["resource"]; print(json.dumps(req))' | \
+curl -s -X POST "http://localhost:4102/fhir/ServiceRequest" \
+  -H "Content-Type: application/json" -d @-
+```
 
-Notes :
-* Les contrôles sont volontairement simplifiés pour le TD (ex : vérification “cercle de soins” non systématique).
-* La logique est cohérente avec les écrans disponibles dans le frontend et les endpoints sécurisés du backend.
+Resultat attendu: un JSON `ServiceRequest` créé sur le service labo.
 
----
+### 4) Labo -> Plateforme (resultat)
 
-## 🧾 Sources, prompts, choix et esprit critique
+Le labo renvoie un résultat d'analyse à la plateforme.
 
-**Choix d’implémentation**
-* Sous-ensemble MOS/NOS ciblé : patient, professionnel, structure, cercle de soins, documents, rendez-vous, résultats, messages.
-* Codes NOS intégrés dans `ref_nomenclature` pour la traduction côté UI.
-* Authentification/autorisation via Keycloak (rôles simples).
+```bash
+curl -s -X POST "http://localhost:4100/fhir/Observation" \
+  -H "Content-Type: application/json" \
+  -d '{"resourceType":"Observation","status":"final","code":{"coding":[{"system":"http://loinc.org","code":"TSH"}]},"subject":{"reference":"Patient/1"},"valueString":"TSH: 0.2 mIU/L"}'
+```
 
-**Esprit critique / limites**
-* Les règles d’habilitation sont simplifiées (pas de matrice fine par type de document ou par contexte).
-* Certains codes sont “adaptés” pour le TD (ex: catégorie “CAB”) et ne sont pas des références officielles exhaustives.
+Resultat attendu: un JSON `Observation` créé sur la plateforme.
 
 ---
 
-## 💡 Notes
+## Notes
 
-* Si le port `5432` (Postgres) est déjà utilisé, je vous conseille de manuellement arrêter celui-ci avant de relancer l'application.
-* Les données Keycloak sont réinitialisées à chaque `docker compose down -v`.
+- Si le port 5432 est déjà utilise, arrèter le Postgres local avant.
+- `docker compose down -v` reinitialise la base et Keycloak.
