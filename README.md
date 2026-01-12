@@ -78,7 +78,7 @@ Puis changez le realm en haut à droite à epitanie.
 
 ---
 
-## FHIR minimal (TP2)
+## FHIR minimal (TD2)
 
 Endpoints disponibles (lecture):
 - `GET /fhir/Patient/:id`
@@ -113,7 +113,7 @@ Resultat attendu: un JSON FHIR `Patient` (id 1).
 
 ---
 
-## Simulation TP3 (multi-instances FHIR)
+## Simulation TD3 (multi-instances FHIR)
 
 On simule l'echange entre 3 services FHIR (plateforme, medecin, labo).
 
