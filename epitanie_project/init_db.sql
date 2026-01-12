@@ -51,7 +51,7 @@ CREATE TABLE patient (
 );
 
 -- 5. Cercle de soins
--- Idéalement, la pathologie devrait être un code CIM-10 (ex: E11 pour Diabète)
+-- La pathologie est un code standardisé (ex: E11 pour Diabète)
 CREATE TABLE cercle_soins (
     patient_id INT REFERENCES patient(id) ON DELETE CASCADE,
     professionnel_id INT REFERENCES professionnel(id) ON DELETE CASCADE,
@@ -129,7 +129,7 @@ INSERT INTO ref_nomenclature (oid, code, libelle) VALUES
 ('1.2.250.1.213.1.1.4.12', 'ORD', 'Ordonnance'),
 ('1.2.250.1.213.1.1.4.12', 'CR-IMG', 'Compte-rendu d''imagerie'),
 
--- 6. Pathologies (CIM-10) - OID: 2.16.840.1.113883.6.3
+-- 6. Pathologies (codes utilisés pour le TD)
 ('2.16.840.1.113883.6.3', 'E11', 'Diabète de type 2'),
 ('2.16.840.1.113883.6.3', 'I10', 'Hypertension essentielle'),
 ('2.16.840.1.113883.6.3', 'L00', 'Affection dermatologique'),
@@ -162,7 +162,7 @@ INSERT INTO patient (ipp, nom, prenom, date_naissance, code_sexe, structure_id) 
 ('IPP-0003','Nguyen','Linh','1990-01-20', 'M', 2);
 
 -- E. Cercle de soins
--- Utilisation de codes CIM-10 simulés (ex: E11 au lieu de "Diabète")
+-- Utilisation de codes de pathologie (ex: E11 au lieu de "Diabète")
 INSERT INTO cercle_soins (patient_id, professionnel_id, code_pathologie) VALUES
 (1,1,'E11'), -- Alice suit Jean pour Diabète
 (2,1,'I10'), -- Alice suit Marie pour HTA

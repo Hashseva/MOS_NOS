@@ -96,7 +96,7 @@ export default function Patients({ token, roles }) {
             <input type="date" placeholder="Date de naissance" value={newPatient.date_naissance}
                    onChange={e => setNewPatient({ ...newPatient, date_naissance: e.target.value })} required />
             
-            {/* Sélection de pathologie par Code CIM-10 (Simulé pour le TD) */}
+            {/* Sélection de pathologie par code standardisé (simulé pour le TD) */}
             <select value={newPatient.code_pathologie} 
                     onChange={e => setNewPatient({ ...newPatient, code_pathologie: e.target.value })}>
               <option value="">-- Pathologie (Optionnel) --</option>

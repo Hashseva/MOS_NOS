@@ -186,21 +186,14 @@ Mise en correspondance basée sur MOS (ANS) + adaptation à notre modèle simpli
 
 ## 🧭 Profils IHE et nomenclatures (TP2)
 
-**Profils IHE pertinents**
-* XDS.b / XDS-I (partage de documents / imagerie)
-* MHD (accès REST/FHIR à la logique XDS)
-* XDW (workflow documentaire)
-* PIX/PDQ (identité patient, si multi-identifiants)
-* ATNA (audit / traçabilité)
+**Profils IHE (mentionnés via le CI-SIS)**
+* IHE (profils abordés dans le cadre du CI-SIS)
 
-**Nomenclatures adaptées**
+**Nomenclatures adaptées (mentionnées en cours)**
 * LOINC (analyses biologiques)
-* SNOMED CT (actes / concepts cliniques)
-* CIM-10 (pathologies)
-* CCAM (actes, imagerie)
+* SNOMED-CT (actes / concepts cliniques)
 * ATC (médicaments)
-* UCUM (unités)
-* Référentiels ANS (TRE_G15, TRE_R66, etc.)
+* MOS / NOS (référentiels de base)
 
 ---
 

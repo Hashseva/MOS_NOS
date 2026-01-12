@@ -179,7 +179,7 @@ app.post('/api/patients', keycloak.protect(), async (req, res) => {
       );
       const patientId = insPat.rows[0].id;
 
-      // 2. Cercle de soins (Lien Pro <-> Patient avec Code Pathologie CIM-10)
+      // 2. Cercle de soins (Lien Pro <-> Patient avec code pathologie)
       if (code_pathologie) {
           await client.query(
             `INSERT INTO cercle_soins (professionnel_id, patient_id, code_pathologie)
