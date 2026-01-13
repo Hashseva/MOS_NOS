@@ -70,7 +70,7 @@ Puis changez le realm en haut à droite à epitanie.
 
 - `epitanie_project/start-dev.sh`: demarre tout le stack en dev
 - `epitanie_project/docker-compose.yml`: Postgres + Keycloak
-- `epitanie_project/init_db.sql`: schema + donnees de test
+- `epitanie_project/init_db.sql`: schema + donnees de test - Toutes les explications sur la construction des données et respect des normes sont dessus sous forme de commentaire
 - `epitanie_project/backend/server.js`: backend REST + securite Keycloak
 - `epitanie_project/frontend/src`: frontend React
 - `epitanie_project/backend/fhir.js`: endpoints FHIR minimaux (lecture)

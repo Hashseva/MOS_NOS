@@ -19,9 +19,9 @@ CREATE TABLE ref_nomenclature (
     PRIMARY KEY (oid, code)
 );
 
--- 2. Structure (MOS : Entité Géographique ou Juridique)
--- Normalement, nous aurions dû utiliser la structure MOS suivante avec l'endité juridique et géopraphique
--- tesl que présent dans le lien suivant, mais pour simplifier le TD, nous utilisons une table plus simple.
+-- 2. Structure
+-- Normalement, il faudrait distinguer l'entité juridique et l'entité géographique.
+-- Pour simplifier le TD, nous utilisons une table unique.
 -- https://mos.esante.gouv.fr/4.html#_f6152a96-2f8f-4f69-89f5-18f024d4b4d8
 -- Remplacement de 'secteur' par 'code_categorie' (TRE_R66_CategorieEtablissement)
 -- https://interop.esante.gouv.fr/ig/nos/1.5.0/CodeSystem-TRE-R66-CategorieEtablissement.html
@@ -31,7 +31,7 @@ CREATE TABLE structure (
     code_categorie VARCHAR(50) NOT NULL -- ex: '355' (Hôpital)
 );
 
--- 3. Professionnel (MOS : Professionnel de Santé)
+-- 3. Professionnel
 -- Inspiration de la structure MOS suivante, pour la classe Professionnel :
 -- https://mos.esante.gouv.fr/2.html#_9d79ff39-6b00-4aa6-ac03-7afb4a8aad2b:~:text=Classe%20%22Professionnel%22
 -- Remplacement de 'role' par 'code_profession' (TRE_G15_ProfessionSante)
@@ -45,7 +45,7 @@ CREATE TABLE professionnel (
     structure_id INT REFERENCES structure(id)
 );
 
--- 4. Patient (MOS : Usager)
+-- 4. Patient
 -- Inspiré de Classe "PersonnePriseCharge":
 -- https://mos.esante.gouv.fr/10.html#_3c0d057f-9056-4d1c-b392-b6343c79fafa:~:text=Classe%20%22PersonnePriseCharge%22
 -- Ajout du Sexe Administratif (TRE_R10_SexeAdministratif)
@@ -117,28 +117,28 @@ CREATE TABLE resultat_analyse (
     date_reception TIMESTAMP DEFAULT now()
 );
 
--- --- INSERTION DES DONNÉES (JEU DE TEST CONFORME) ---
+-- --- INSERTION DES DONNÉES ---
 
--- A. Remplissage du dictionnaire (Ref_Nomenclature)
--- Ce sont les vrais codes NOS simplifiés pour ton TD
+-- A. Remplissage du dictionnaire des nomenclatures
+-- Mélange de codes NOS officiels + codes internes quand nécessaire.
 INSERT INTO ref_nomenclature (oid, code, libelle) VALUES 
--- 1. Professions de santé (TRE_G15) - OID: 1.2.250.1.71.1.2.7
+-- 1. Professions de santé (TRE_G15)
 ('1.2.250.1.71.1.2.7', '10', 'Médecin'),
 ('1.2.250.1.71.1.2.7', '60', 'Infirmier'),
 
 -- 2. Catégorie d'établissement (TRE_R66) - OID: 1.2.250.1.213.1.6.1.8
 ('1.2.250.1.213.1.6.1.8', '355', 'Centre Hospitalier (CH)'),
 
--- 4. Rôles internes (Hors nomenclature nationale)
--- N'ayant pas trouver d'OID proche d'un secrétaire, nous utilisons un OID fictif
-('LOCAL', 'SEC', 'Secrétaire Médicale'),
+-- 4. Roles internes (hors nomenclature nationale)
+-- Le role "secretaire" n'existe pas dans TRE_G15, on utilise un code local n'ayant pas trouver rien d'assez proche.
+('LOCAL', 'SEC', 'Secrétaire'),
 
 -- 5. Types de documents (TRE_A03) - OID: 1.2.250.1.213.1.1.4.1 
 ('1.2.250.1.213.1.1.4.1', '10', 'Compte rendu'),
 ('1.2.250.1.213.1.1.4.1', '42', 'Prescription'),
 ('1.2.250.1.213.1.1.4.1', '31', 'Imagerie médicale'),
 
--- 6. Pathologies (codes utilisés pour le TD)
+-- 6. Pathologies
 -- OID officiel pour la CIM-10 : 2.16.840.1.113883.6.3
 -- https://icd.who.int/browse10/2008/fr#/E11
 -- https://icd.who.int/browse10/2008/fr#/I10
@@ -147,7 +147,7 @@ INSERT INTO ref_nomenclature (oid, code, libelle) VALUES
 ('2.16.840.1.113883.6.3', 'I10', 'Hypertension essentielle'),
 ('2.16.840.1.113883.6.3', 'J01', 'Sinusite aiguë'),
 
--- 7. Analyses (codes internes pour le TD)
+-- 7. Analyses (codes internes)
 ('LOCAL', 'LOCAL-GLUCOSE', 'Glycémie'),
 ('LOCAL', 'LOCAL-TSH', 'Hormone thyréotrope (TSH)'),
 ('LOCAL', 'LOCAL-NFS', 'Numération form. sanguine');
@@ -165,7 +165,7 @@ INSERT INTO professionnel (idpp, nom, prenom, code_profession, structure_id) VAL
 ('IDPP-MED01','Durand','Alice','10', 1),  -- 10 = Médecin
 ('IDPP-MED02','Martin','Paul','10', 2),   -- 10 = Médecin
 ('IDPP-INF01','Leclerc','Julie','60', 1), -- 60 = Infirmier
-('IDPP-SEC01','Secretariat','Centre','SEC', 1); -- SEC = Secrétaire
+('IDPP-SEC01','Secretariat','Centre','SEC', 1); -- SEC = Secrétaire (code local)
 
 -- D. Patients
 -- Ajout du sexe (F/M) requis par l'identité standard
