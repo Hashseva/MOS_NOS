@@ -5,14 +5,13 @@ export default function Patients({ token, roles }) {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Formulaire nouveau patient (Note : on utilise des codes désormais)
   const [newPatient, setNewPatient] = useState({
     ipp: '',
     nom: '',
     prenom: '',
     date_naissance: '',
-    code_sexe: 'M',        // Nouveau champ MOS
-    code_pathologie: ''    // On stocke le code (ex: E11)
+    code_sexe: 'M',        
+    code_pathologie: ''    
   });
 
   // Formulaire de rattachement
@@ -86,7 +85,7 @@ export default function Patients({ token, roles }) {
             <input placeholder="Prénom" value={newPatient.prenom}
                    onChange={e => setNewPatient({ ...newPatient, prenom: e.target.value })} required />
             
-            {/* Nouveau champ Sexe requis */}
+            {/* Champ Sexe requis */}
             <select value={newPatient.code_sexe} 
                     onChange={e => setNewPatient({ ...newPatient, code_sexe: e.target.value })}>
               <option value="M">Masculin</option>
@@ -96,7 +95,7 @@ export default function Patients({ token, roles }) {
             <input type="date" placeholder="Date de naissance" value={newPatient.date_naissance}
                    onChange={e => setNewPatient({ ...newPatient, date_naissance: e.target.value })} required />
             
-            {/* Sélection de pathologie par code standardisé (simulé pour le TD) */}
+            {/* Sélection de pathologie par code standardisé */}
             <select value={newPatient.code_pathologie} 
                     onChange={e => setNewPatient({ ...newPatient, code_pathologie: e.target.value })}>
               <option value="">-- Pathologie (Optionnel) --</option>

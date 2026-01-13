@@ -44,7 +44,6 @@ export default function Messages({ token, roles }) {
         <label>Destinataire : </label>
         <select value={selectedUser} onChange={e=>{setSelectedUser(e.target.value); fetchMessages(e.target.value);}}>
           {users.map(u => (
-            // Le backend renvoie maintenant un objet {id: 'pro-1', label: 'Alice (Médecin)'}
             <option key={u.id} value={u.id}>
               {u.label}
             </option>

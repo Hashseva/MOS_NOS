@@ -25,7 +25,7 @@ export default function App() {
       .init({
         onLoad: 'login-required',
         checkLoginIframe: false,
-        pkceMethod: 'S256',                 // ← ajout 1 : PKCE (recommandé)
+        pkceMethod: 'S256',                 
       })
       .then((auth) => {
         setKc(keycloak);
@@ -33,13 +33,12 @@ export default function App() {
         setLoading(false);
 
         if (!auth) {
-          keycloak.login({                   // ← ajout 2 : force la redirection
+          keycloak.login({                   
             redirectUri: window.location.href,
           });
           return;
         }
 
-        // (optionnel) refresh token pour rester connecté
         refreshTimer = setInterval(() => {
           keycloak.updateToken(60).catch(() => keycloak.login());
         }, 30000);

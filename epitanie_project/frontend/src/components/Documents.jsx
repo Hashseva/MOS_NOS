@@ -6,7 +6,6 @@ export default function Documents({ token, roles }) {
   const [selectedPatient, setSelectedPatient] = useState('');
   const [documents, setDocuments] = useState([]);
   
-  // On utilise code_type_document au lieu de type libre
   const [newDoc, setNewDoc] = useState({ code_type_document: '10', contenu: '' });
 
   useEffect(() => { fetchPatients(); }, []);
