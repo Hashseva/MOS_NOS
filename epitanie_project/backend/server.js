@@ -234,7 +234,7 @@ app.post('/api/documents', keycloak.protect(), async (req, res) => {
     const { username } = getKC(req);
     const pro = await getProByUsername(username);
     
-    // On attend code_type_document (ex: 'CR-CONS')
+    // On attend code_type_document (ex: '10')
     const { patient_id, code_type_document, contenu } = req.body;
     
     if (!patient_id || !code_type_document || !contenu) 
@@ -283,7 +283,7 @@ app.post('/api/resultats', keycloak.protect(), async (req, res) => {
         const { username } = getKC(req);
         const pro = await getProByUsername(username);
         
-        // On attend code_analyse (ex: 'GLUCOSE')
+        // On attend code_analyse (ex: 'LOCAL-GLUCOSE')
         const { patient_id, code_analyse, contenu } = req.body;
 
         const ins = await pool.query(

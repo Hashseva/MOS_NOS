@@ -7,7 +7,7 @@ export default function Documents({ token, roles }) {
   const [documents, setDocuments] = useState([]);
   
   // On utilise code_type_document au lieu de type libre
-  const [newDoc, setNewDoc] = useState({ code_type_document: 'CR-CONS', contenu: '' });
+  const [newDoc, setNewDoc] = useState({ code_type_document: '10', contenu: '' });
 
   useEffect(() => { fetchPatients(); }, []);
 
@@ -33,7 +33,7 @@ export default function Documents({ token, roles }) {
     e.preventDefault();
     try{
       await api(token).post('/documents', {...newDoc, patient_id:selectedPatient});
-      setNewDoc({ code_type_document:'CR-CONS', contenu:'' });
+      setNewDoc({ code_type_document:'10', contenu:'' });
       fetchDocuments(selectedPatient);
     }catch(err){ console.error(err);}
   }
@@ -66,9 +66,9 @@ export default function Documents({ token, roles }) {
           {/* Choix du type via Code NOS */}
           <select value={newDoc.code_type_document} 
                   onChange={e=>setNewDoc({...newDoc, code_type_document:e.target.value})}>
-            <option value="CR-CONS">Compte-Rendu Consultation</option>
-            <option value="CR-IMG">Compte-Rendu Imagerie</option>
-            <option value="ORD">Ordonnance</option>
+            <option value="10">Compte rendu</option>
+            <option value="31">Imagerie médicale</option>
+            <option value="42">Prescription</option>
           </select>
 
           <input placeholder="Contenu du document..." 

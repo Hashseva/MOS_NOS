@@ -54,7 +54,7 @@ function buildObservation(row) {
     status: 'final',
     code: {
       coding: [{
-        system: 'http://loinc.org',
+        system: 'urn:epitanie:analysis',
         code: row.code_analyse || 'NA'
       }]
     },
@@ -72,7 +72,7 @@ function buildDocumentReference(row) {
     status: 'current',
     type: row.code_type_document ? {
       coding: [{
-        system: 'urn:oid:1.2.250.1.213.1.1.4.12',
+        system: 'urn:oid:1.2.250.1.213.1.1.4.1',
         code: row.code_type_document
       }]
     } : undefined,
@@ -111,7 +111,7 @@ function buildTd2SampleBundle() {
           id: 'sr-lab-1',
           status: 'active',
           intent: 'order',
-          code: { coding: [{ system: 'http://loinc.org', code: 'TSH' }] },
+          code: { coding: [{ system: 'urn:epitanie:analysis', code: 'LOCAL-TSH' }] },
           subject: { reference: 'Patient/1' },
           requester: { reference: 'Practitioner/1' }
         }
@@ -132,7 +132,7 @@ function buildTd2SampleBundle() {
           resourceType: 'DocumentReference',
           id: 'doc-1',
           status: 'current',
-          type: { coding: [{ system: 'urn:oid:1.2.250.1.213.1.1.4.12', code: 'CR-CONS' }] },
+          type: { coding: [{ system: 'urn:oid:1.2.250.1.213.1.1.4.1', code: '10' }] },
           subject: { reference: 'Patient/1' },
           author: [{ reference: 'Practitioner/1' }],
           date: new Date().toISOString(),
@@ -144,7 +144,7 @@ function buildTd2SampleBundle() {
           resourceType: 'Observation',
           id: 'obs-1',
           status: 'final',
-          code: { coding: [{ system: 'http://loinc.org', code: 'TSH' }] },
+          code: { coding: [{ system: 'urn:epitanie:analysis', code: 'LOCAL-TSH' }] },
           subject: { reference: 'Patient/1' },
           effectiveDateTime: new Date().toISOString(),
           valueString: 'TSH: 0.2 mIU/L'

@@ -7,7 +7,7 @@ export default function Analyses({ token, roles }) {
   const [analyses, setAnalyses] = useState([]);
   
   // Utilisation de code_analyse
-  const [newAnalyse, setNewAnalyse] = useState({ code_analyse: 'GLUCOSE', contenu: '' });
+  const [newAnalyse, setNewAnalyse] = useState({ code_analyse: 'LOCAL-GLUCOSE', contenu: '' });
 
   useEffect(() => { fetchPatients(); }, []);
 
@@ -33,7 +33,7 @@ export default function Analyses({ token, roles }) {
     e.preventDefault();
     try{
       await api(token).post('/resultats', {...newAnalyse, patient_id:selectedPatient});
-      setNewAnalyse({ code_analyse:'GLUCOSE', contenu:''});
+      setNewAnalyse({ code_analyse:'LOCAL-GLUCOSE', contenu:''});
       fetchAnalyses(selectedPatient);
     }catch(err){ console.error(err);}
   }
@@ -63,9 +63,9 @@ export default function Analyses({ token, roles }) {
         <form onSubmit={addAnalyse}>
           {/* Sélection code analyse */}
           <select value={newAnalyse.code_analyse} onChange={e=>setNewAnalyse({...newAnalyse, code_analyse:e.target.value})}>
-             <option value="GLUCOSE">Glycémie</option>
-             <option value="TSH">TSH (Thyroïde)</option>
-             <option value="NFS">Numération Formule Sanguine</option>
+             <option value="LOCAL-GLUCOSE">Glycémie</option>
+             <option value="LOCAL-TSH">TSH (Thyroïde)</option>
+             <option value="LOCAL-NFS">Numération Formule Sanguine</option>
           </select>
 
           <input placeholder="Valeur / Résultat" value={newAnalyse.contenu} 

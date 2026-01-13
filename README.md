@@ -137,11 +137,11 @@ On envoie un compte-rendu + une prescription a la plateforme.
 ```bash
 curl -s -X POST "http://localhost:4100/fhir/DocumentReference" \
   -H "Content-Type: application/json" \
-  -d '{"resourceType":"DocumentReference","status":"current","type":{"coding":[{"code":"CR-CONS"}]},"subject":{"reference":"Patient/1"},"content":[{"attachment":{"contentType":"text/plain","data":"Q1IgZW5kb2NyaW5v"}}]}'
+  -d '{"resourceType":"DocumentReference","status":"current","type":{"coding":[{"code":"10"}]},"subject":{"reference":"Patient/1"},"content":[{"attachment":{"contentType":"text/plain","data":"Q1IgZW5kb2NyaW5v"}}]}'
 
 curl -s -X POST "http://localhost:4100/fhir/ServiceRequest" \
   -H "Content-Type: application/json" \
-  -d '{"resourceType":"ServiceRequest","status":"active","intent":"order","code":{"coding":[{"system":"http://loinc.org","code":"TSH"}]},"subject":{"reference":"Patient/1"}}'
+  -d '{"resourceType":"ServiceRequest","status":"active","intent":"order","code":{"coding":[{"system":"urn:epitanie:analysis","code":"LOCAL-TSH"}]},"subject":{"reference":"Patient/1"}}'
 ```
 
 Resultat attendu: chaque commande renvoie le JSON cree avec un `id`.
@@ -166,7 +166,7 @@ Le labo renvoie un résultat d'analyse à la plateforme.
 ```bash
 curl -s -X POST "http://localhost:4100/fhir/Observation" \
   -H "Content-Type: application/json" \
-  -d '{"resourceType":"Observation","status":"final","code":{"coding":[{"system":"http://loinc.org","code":"TSH"}]},"subject":{"reference":"Patient/1"},"valueString":"TSH: 0.2 mIU/L"}'
+  -d '{"resourceType":"Observation","status":"final","code":{"coding":[{"system":"urn:epitanie:analysis","code":"LOCAL-TSH"}]},"subject":{"reference":"Patient/1"},"valueString":"TSH: 0.2 mIU/L"}'
 ```
 
 Resultat attendu: un JSON `Observation` créé sur la plateforme.
