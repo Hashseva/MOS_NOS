@@ -2,7 +2,7 @@
   "realm": "epitanie",
   "auth-server-url": "http://localhost:8080",
   "ssl-required": "external",
-  "resource": "epitanie-app",
+  "resource": "epitanie-frontend",
   "public-client": true,
   "confidential-port": 0
 }

@@ -73,21 +73,21 @@ Puis changez le realm en haut à droite à epitanie.
 - `epitanie_project/init_db.sql`: schema + donnees de test - Toutes les explications sur la construction des données et respect des normes sont dessus sous forme de commentaire
 - `epitanie_project/backend/server.js`: backend REST + securite Keycloak
 - `epitanie_project/frontend/src`: frontend React
-- `epitanie_project/backend/fhir.js`: endpoints FHIR minimaux (lecture)
-- `epitanie_project/backend/fhir-sim.js`: serveur FHIR simple pour simulation TP3
+- `epitanie_project/backend/fhir.js`: endpoints FHIR minimaux (lecture) (TD 2)
+- `epitanie_project/backend/fhir-sim.js`: serveur FHIR simple pour simulation (TD 3)
 
 ---
 
 ## FHIR minimal (TD2)
 
 Endpoints disponibles (lecture):
-- `GET /fhir/Patient/:id`
-- `GET /fhir/Practitioner/:id`
-- `GET /fhir/Organization/:id`
-- `GET /fhir/Observation/:id`
-- `GET /fhir/DocumentReference/:id`
-- `GET /fhir/Appointment/:id`
-- `GET /fhir/samples/td2` (exemple statique)
+- `GET /fhir/Patient/:id` : https://hl7.org/fhir/R4/patient.html
+- `GET /fhir/Practitioner/:id` : https://hl7.org/fhir/R4/practitioner.html
+- `GET /fhir/Organization/:id` : https://hl7.org/fhir/R4/organization.html
+- `GET /fhir/Observation/:id` : https://hl7.org/fhir/R4/observation.html
+- `GET /fhir/DocumentReference/:id` https://hl7.org/fhir/R4/documentreference.html
+- `GET /fhir/Appointment/:id` : https://hl7.org/fhir/R4/appointment.html
+- `GET /fhir/samples/td2` : exemple statique
 
 Pour tester les endpoints, apres avoir lancé l'application, vous pouvez utiliser les commandes suivantes.
 
@@ -96,9 +96,9 @@ Cette commande permet de recuperer un token d'acces (Keycloak):
 curl -s -X POST "http://localhost:8080/realms/epitanie/protocol/openid-connect/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=password" \
-  -d "client_id=admin-cli" \
-  -d "username=admin" \
-  -d "password=admin"
+  -d "client_id=epitanie-frontend" \
+  -d "username=IDPP-MED01" \
+  -d "password=test"
 ```
 
 Resultat attendu: un JSON contenant `access_token`.

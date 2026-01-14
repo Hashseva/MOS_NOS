@@ -1,5 +1,6 @@
 const express = require('express');
 
+// Map DB rows to minimal FHIR resources.
 function buildPatient(row) {
   const gender =
     row.code_sexe === 'M' ? 'male' :
@@ -16,6 +17,7 @@ function buildPatient(row) {
   };
 }
 
+// Practitioner derived from our "professionnel" table.
 function buildPractitioner(row) {
   return {
     resourceType: 'Practitioner',
@@ -33,6 +35,7 @@ function buildPractitioner(row) {
   };
 }
 
+// Organization derived from our "structure" table.
 function buildOrganization(row) {
   return {
     resourceType: 'Organization',
@@ -47,6 +50,7 @@ function buildOrganization(row) {
   };
 }
 
+// Lab result mapped to a basic Observation.
 function buildObservation(row) {
   return {
     resourceType: 'Observation',
@@ -65,6 +69,7 @@ function buildObservation(row) {
   };
 }
 
+// Simple document record mapped to DocumentReference.
 function buildDocumentReference(row) {
   return {
     resourceType: 'DocumentReference',
@@ -83,6 +88,7 @@ function buildDocumentReference(row) {
   };
 }
 
+// Appointment mapped from rendezvous.
 function buildAppointment(row) {
   const participants = [{ actor: { reference: `Patient/${row.patient_id}` } }];
   if (row.createur_id) {
@@ -100,6 +106,7 @@ function buildAppointment(row) {
   };
 }
 
+// Static bundle used for TD2 demo (not stored in DB).
 function buildTd2SampleBundle() {
   return {
     resourceType: 'Bundle',
@@ -167,6 +174,7 @@ function buildTd2SampleBundle() {
 function fhirRouter(pool, keycloak) {
   const router = express.Router();
 
+  // Read-only FHIR endpoints, protected by Keycloak.
   router.get('/Patient/:id', keycloak.protect(), async (req, res) => {
     const r = await pool.query('SELECT * FROM patient WHERE id=$1', [req.params.id]);
     if (!r.rows.length) return res.status(404).json({ error: 'Not found' });
@@ -203,6 +211,7 @@ function fhirRouter(pool, keycloak) {
     return res.json(buildAppointment(r.rows[0]));
   });
 
+  // Public sample bundle to illustrate TD2 scenario.
   router.get('/samples/td2', (req, res) => {
     return res.json(buildTd2SampleBundle());
   });

@@ -89,7 +89,7 @@ create_realm_and_client_with_kcadm () {
       -s clientId="$FRONT_CLIENT_ID" \
       -s publicClient=true \
       -s standardFlowEnabled=true \
-      -s directAccessGrantsEnabled=false \
+      -s directAccessGrantsEnabled=true \
       -s 'attributes."pkce.code.challenge.method"=S256' \
       || true
       # ↑ Si ça échoue encore, supprime complètement cette ligne.
